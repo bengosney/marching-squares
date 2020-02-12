@@ -103,7 +103,7 @@ class App extends Component {
         const a = {x: x2 - x1, y: y2 - y1};
         let mag = Math.sqrt(a.x * a.x + a.y * a.y);
 
-        if (mag == 0) {
+        if (mag === 0) {
             a.x = a.y = 0;
         } else {
             a.x = a.x / mag * dx;
@@ -125,86 +125,56 @@ class App extends Component {
     }
 
     drawDots() {
-        const {width, height, mouseX, mouseY, mouseEvent, mouseOver, effectMod, strength, pixelSize, gap} = this.state;
-        const {r, g, b, a} = this.state;
-        const effect = Math.min(width, height) * effectMod;
+        const {width, height, mouseX, mouseY, mouseOver } = this.state;
         const {ctx} = this;
+        const ts = this.getTS() / 1000;
 
-        const curStrength = strength;
-        const timeMod = (this.getTS() - mouseEvent) / 3;
+        const smallest = Math.min(width, height);
+        const strength = Math.min(smallest / 15, 40);
+        const gap = Math.min(smallest / 50, 15);
+        const pixelSize = 1;
 
         let curX = mouseX;
         let curY = mouseY;
-
         if (!mouseOver) {
-            const ts = this.getTS() / 1000;
-            const quarterWidth = width / 4;
-            const quarterHeight = height / 4;
-            curX = this.scale(Math.sin(ts), [-1, 1], [quarterWidth, width - quarterWidth]);
-            curY = this.scale(Math.cos(ts), [-1, 1], [quarterHeight, height - quarterHeight]);
+            const border = 7.5;
+            const borderWidth = width / border;
+            const borderHeight = height / border;
+            curX = this.scale(Math.sin(ts), [-1, 1], [borderWidth, width - borderWidth]);
+            curY = this.scale(Math.cos(ts), [-1, 1], [borderHeight, height - borderHeight]);
         }
 
         for (let x = 0; x < width; x += gap) {
             for (let y = 0; y < height; y += gap) {
                 const dist = this.distance(x, y, curX, curY);
 
-                const mod = Math.max(0, curStrength);
+                const mod = Math.max(0, strength);
                 const pos = this.move(x, y, mod, curX, curY, x, y);
 
                 const pixelMod = this.scale(dist, [0, width], [0, gap]);
 
-                const from = [7, 197, 209];
-                const to = [242, 51, 168];
-                const modr = this.scale(dist, [0, width], [from[0], to[0]]);
-                const modg = this.scale(dist, [0, width], [from[1], to[1]]);
-                const modb = this.scale(dist, [0, width], [from[2], to[2]]);
+                const from = [242, 51, 168];
+                const to = [7, 197, 209];
+
+                const r = this.scale(dist, [0, width * .75], [from[0], to[0]]);
+                const g = this.scale(dist, [0, width * .75], [from[1], to[1]]);
+                const b = this.scale(dist, [0, width * .75], [from[2], to[2]]);
+                const a = .8;
 
                 ctx.beginPath();
-                ctx.fillStyle = `rgba(${modr}, ${modg}, ${modb}, ${a})`;
+                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
                 ctx.fillRect(pos.x, pos.y, pixelSize + pixelMod, pixelSize + pixelMod);
             }
         }
     }
 
     render() {
-        const {width, height, effectMod, strength, pixelSize, gap} = this.state;
-        const {r, g, b, a} = this.state;
+        const {width, height } = this.state;
 
         return (
             <div className={'grid'}>
                 <div className={'dots'}>
                     <canvas ref="canvas" width={width} height={height}/>
-                </div>
-                <div className={'controls'}>
-                    <h2>Controls</h2>
-                    <div>
-                        <label htmlFor={'area'}>Area Effected</label><br/>
-                        <input name={'area'} value={effectMod}
-                               onChange={e => this.setState({effectMod: e.target.value})}/>
-                    </div>
-                    <div>
-                        <label htmlFor={'strength'}>Strength</label><br/>
-                        <input name={'strength'} value={strength}
-                               onChange={e => this.setState({strength: e.target.value})}/>
-                    </div>
-                    <div>
-                        <label htmlFor={'size'}>Dot Size</label><br/>
-                        <input name={'size'} value={pixelSize}
-                               onChange={e => this.setState({pixelSize: e.target.value})}/>
-                    </div>
-                    <div>
-                        <label htmlFor={'gap'}>Gap Size</label><br/>
-                        <input name={'gap'} value={gap} onChange={e => this.setState({gap: e.target.value})}/>
-                    </div>
-                    <div>
-                        <label>Colour</label><br/>
-                        <div className={'row'}>
-                            <input className={'small'} value={r} onChange={e => this.setState({r: e.target.value})}/>
-                            <input className={'small'} value={g} onChange={e => this.setState({g: e.target.value})}/>
-                            <input className={'small'} value={b} onChange={e => this.setState({b: e.target.value})}/>
-                            <input className={'small'} value={a} onChange={e => this.setState({a: e.target.value})}/>
-                        </div>
-                    </div>
                 </div>
             </div>
         );

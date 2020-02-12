@@ -1,7 +1,9 @@
 body {
     background: #000;
     color: #fff;
-    background-size: cover;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center center;
 }
 
 canvas {
