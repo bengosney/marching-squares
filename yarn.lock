@@ -7021,10 +7021,10 @@ onetime@^2.0.0:
   dependencies:
     mimic-fn "^1.0.0"
 
-open-simplex-noise@^1.6.0:
-  version "1.7.0"
-  resolved "https://registry.yarnpkg.com/open-simplex-noise/-/open-simplex-noise-1.7.0.tgz#eb7bde6d0fec928024675da3fa59e499a1ff40d2"
-  integrity sha512-2IofLUR/T3nZYCD6Il6509efdtdM6bQQ8rEWxgdHNdCALCgwtPnuxvf4e4k47mHBuDht2oEzmVRdOCpMfwq/Cw==
+open-simplex-noise@^2.4.0-pre4:
+  version "2.4.0-pre4"
+  resolved "https://registry.yarnpkg.com/open-simplex-noise/-/open-simplex-noise-2.4.0-pre4.tgz#a0032a793bdca35a4c4470fcb8408f82089ddd71"
+  integrity sha512-NO7jDIom2OCsODXihm0lh3VViZYV58NHDhPOKkzOQ+zFvGgvaGXSiGXAwwKr7jLYA8101KUW6+6jcTLsPLtLhg==
 
 opn@5.4.0:
   version "5.4.0"

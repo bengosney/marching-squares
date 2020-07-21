@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { makeNoise2D } from "open-simplex-noise";
 import "./App.css";
 
 class App extends Component {
@@ -6,7 +7,7 @@ class App extends Component {
         super(props);
 
         this.state = {
-            pixelSize: 30,
+            pixelSize: 10,
             height: 500,
             width: 150,
             mouseX: -9999,
@@ -24,19 +25,24 @@ class App extends Component {
 
         this.updateWindowDimensions = this.updateWindowDimensions.bind(this);
         this.startts = this.getTS();
+
+        this.noise2D = makeNoise2D(Date.now());
     }
 
     getValues(width, height) {
         const { pixelSize } = this.state;
+        const { noise2D } = this;
 
         const rows = Math.ceil(height / pixelSize) + 1;
         const cols = Math.ceil(width / pixelSize) + 1;
+
+        const mod = 0.1;
 
         const data = new Array(cols);
         for (let x = 0; x < cols; x++) {
             data[x] = new Array(rows);
             for (let y = 0; y < rows; y++) {
-                data[x][y] = Math.random();
+                data[x][y] = this.convertRange(noise2D(x * mod, y * mod), [-1, 1], [0, 1]);
             }
         }
 
@@ -121,7 +127,7 @@ class App extends Component {
         for (let x = 0; x < data.length; x++) {
             for (let y = 0; y < data[x].length; y++) {
 
-                const v = Math.round(data[x][y]) ? 0 : 1;
+                const v = data[x][y];
 
                 const r = v * 255;
                 const g = v * 255;
