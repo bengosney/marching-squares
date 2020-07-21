@@ -1,12 +1,12 @@
-import React, {Component} from 'react';
-import './App.css';
+import React, { Component } from "react";
+import "./App.css";
 
 class App extends Component {
     constructor(props) {
         super(props);
 
         this.state = {
-            pixelSize: 1.5,
+            pixelSize: 30,
             height: 500,
             width: 150,
             mouseX: -9999,
@@ -16,11 +16,7 @@ class App extends Component {
             strength: 40,
             strengthCur: 0,
             mouseOver: false,
-            gap: 14,
-            r: 255,
-            g: 255,
-            b: 255,
-            a: .8
+            data: [[]],
         };
 
         this.drawing = false;
@@ -30,43 +26,49 @@ class App extends Component {
         this.startts = this.getTS();
     }
 
+    getValues(width, height) {
+        const { pixelSize } = this.state;
+
+        const rows = Math.ceil(height / pixelSize) + 1;
+        const cols = Math.ceil(width / pixelSize) + 1;
+
+        const data = new Array(cols);
+        for (let x = 0; x < cols; x++) {
+            data[x] = new Array(rows);
+            for (let y = 0; y < rows; y++) {
+                data[x][y] = Math.random();
+            }
+        }
+
+        return data;
+    }
 
     componentDidMount() {
         const canvas = this.refs.canvas;
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d");
 
-        canvas.addEventListener('mousemove', (e) => {
-            this.setState({
-                mouseX: e.clientX,
-                mouseY: e.clientY
-            });
-        });
-
-        canvas.addEventListener('mouseover', () => {
-            this.setState({mouseOver: true, mouseEvent: this.getTS()});
-        });
-
-        canvas.addEventListener('mouseleave', () => {
-            this.setState({mouseOver: false, mouseEvent: this.getTS()});
-        });
-
         this.rAF = requestAnimationFrame(() => this.updateAnimationState());
         this.updateWindowDimensions();
-        window.addEventListener('resize', this.updateWindowDimensions);
+        window.addEventListener("resize", this.updateWindowDimensions);
     }
 
     updateWindowDimensions() {
         const rect = this.canvas.getBoundingClientRect();
-        const {innerWidth, innerHeight} = window;
-        const {width, height} = rect;
+        const { innerWidth, innerHeight } = window;
+        const { width, height } = rect;
+        const realWidth = Math.min(width, innerWidth);
+        const realHeight = Math.min(height, innerHeight);
 
-        this.setState({width: Math.min(width, innerWidth), height: Math.min(height, innerHeight)});
+        const data = this.getValues(realWidth, realHeight);
+
+        this.setState({ width: realWidth, height: realHeight, data: data });
+        this.nextFrame();
     }
 
     componentWillUnmount() {
         cancelAnimationFrame(this.rAF);
-        window.removeEventListener('resize', this.updateWindowDimensions);
+        window.removeEventListener("resize", this.updateWindowDimensions);
     }
 
     updateAnimationState() {
@@ -75,7 +77,7 @@ class App extends Component {
 
         this.drawDots();
 
-        this.nextFrame();
+        //this.nextFrame();
     }
 
     nextFrame() {
@@ -83,8 +85,8 @@ class App extends Component {
     }
 
     clearFrame() {
-        const {width, height} = this.state;
-        const {ctx} = this;
+        const { width, height } = this.state;
+        const { ctx } = this;
 
         ctx.clearRect(0, 0, width, height);
     }
@@ -96,21 +98,7 @@ class App extends Component {
     }
 
     convertRange(value, r1, r2) {
-        return (value - r1[0]) * (r2[1] - r2[0]) / (r1[1] - r1[0]) + r2[0];
-    }
-
-    move(x, y, dx, x1, y1, x2, y2) {
-        const a = {x: x2 - x1, y: y2 - y1};
-        let mag = Math.sqrt(a.x * a.x + a.y * a.y);
-
-        if (mag === 0) {
-            a.x = a.y = 0;
-        } else {
-            a.x = a.x / mag * dx;
-            a.y = a.y / mag * dx;
-        }
-
-        return {x: x + a.x, y: y + a.y};
+        return ((value - r1[0]) * (r2[1] - r2[0])) / (r1[1] - r1[0]) + r2[0];
     }
 
     distance(x1, y1, x2, y2) {
@@ -118,63 +106,111 @@ class App extends Component {
         const y = y1 - y2;
 
         return Math.sqrt(x * x + y * y);
-    };
+    }
 
     scale(value, r1, r2) {
-        return (value - r1[0]) * (r2[1] - r2[0]) / (r1[1] - r1[0]) + r2[0];
+        return ((value - r1[0]) * (r2[1] - r2[0])) / (r1[1] - r1[0]) + r2[0];
     }
 
     drawDots() {
-        const {width, height, mouseX, mouseY, mouseOver } = this.state;
-        const {ctx} = this;
+        const { width, height, data, pixelSize } = this.state;
+        const { ctx } = this;
         const ts = this.getTS() / 1000;
 
-        const smallest = Math.min(width, height);
-        const strength = Math.min(smallest / 15, 40);
-        const gap = Math.min(smallest / 50, 15);
-        const pixelSize = 1;
+        /*
+        for (let x = 0; x < data.length; x++) {
+            for (let y = 0; y < data[x].length; y++) {
 
-        let curX = mouseX;
-        let curY = mouseY;
-        if (!mouseOver) {
-            const border = 7.5;
-            const borderWidth = width / border;
-            const borderHeight = height / border;
-            curX = this.scale(Math.sin(ts), [-1, 1], [borderWidth, width - borderWidth]);
-            curY = this.scale(Math.cos(ts), [-1, 1], [borderHeight, height - borderHeight]);
-        }
+                const v = Math.round(data[x][y]) ? 0 : 1;
 
-        for (let x = 0; x < width; x += gap) {
-            for (let y = 0; y < height; y += gap) {
-                const dist = this.distance(x, y, curX, curY);
+                const r = v * 255;
+                const g = v * 255;
+                const b = v * 255;
+                const a = 0.8;
 
-                const mod = Math.max(0, strength);
-                const pos = this.move(x, y, mod, curX, curY, x, y);
-
-                const pixelMod = this.scale(dist, [0, width], [0, gap]);
-
-                const from = [242, 51, 168];
-                const to = [7, 197, 209];
-
-                const r = this.scale(dist, [0, width * .75], [from[0], to[0]]);
-                const g = this.scale(dist, [0, width * .75], [from[1], to[1]]);
-                const b = this.scale(dist, [0, width * .75], [from[2], to[2]]);
-                const a = .8;
+                const mod = pixelSize * .5;
 
                 ctx.beginPath();
                 ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
-                ctx.fillRect(pos.x, pos.y, pixelSize + pixelMod, pixelSize + pixelMod);
+                ctx.fillRect((x * pixelSize) + mod, (y * pixelSize) + mod, pixelSize - mod, pixelSize - mod );
+            }
+        }
+        //*/
+
+        for (let x = 0; x < data.length - 1; x++) {
+            for (let y = 0; y < data[x].length - 1; y++) {
+                const v1 = Math.round(data[x][y]);
+                const v2 = Math.round(data[x + 1][y]);
+                const v3 = Math.round(data[x + 1][y + 1]);
+                const v4 = Math.round(data[x][y + 1]);
+                const vString = `${v1}${v2}${v3}${v4}`;
+
+                const line = (fx, fy, tx, ty) => {
+                    ctx.beginPath();
+                    ctx.strokeStyle = `rgba(255, 255, 255, 1)`;
+                    ctx.moveTo(x * pixelSize + fx, y * pixelSize + fy);
+                    ctx.lineTo(x * pixelSize + tx, y * pixelSize + ty);
+                    ctx.stroke();
+                };
+
+                switch (vString) {
+                    case "1110":
+                    case "0001":
+                        line(0, pixelSize / 2, pixelSize / 2, pixelSize);
+                        break;
+                    case "1101":
+                    case "0010":
+                        line(pixelSize / 2, pixelSize, pixelSize, pixelSize / 2);
+                        break;
+                    case "1011":
+                    case "0100":
+                        line(pixelSize / 2, 0, pixelSize, pixelSize / 2);
+                        break;
+                    case "0111":
+                    case "1000":
+                        line(0, pixelSize / 2, pixelSize / 2, 0);
+                        break;
+                    case "1100":
+                    case "0011":
+                        line(0, pixelSize / 2, pixelSize, pixelSize / 2);
+                        break;
+                    case "1001":
+                    case "0110":
+                        line(pixelSize / 2, 0, pixelSize / 2, pixelSize);
+                        break;
+                    case "1010":
+                        line(0, pixelSize / 2, pixelSize / 2, 0);
+                        line(pixelSize / 2, pixelSize, pixelSize, pixelSize / 2);
+                        break;
+                    case "0101":
+                        line(0, pixelSize / 2, pixelSize / 2, pixelSize);
+                        line(pixelSize / 2, 0, pixelSize, pixelSize / 2);
+                        break;
+                    case "1111":
+                    case "0000":
+                        break;
+                    default:
+                        console.log("missed", vString);
+                        break;
+                }
+
+                if (y > 1) {
+                    //break;
+                }
+            }
+            if (x > 0) {
+                //break;
             }
         }
     }
 
     render() {
-        const {width, height } = this.state;
+        const { width, height } = this.state;
 
         return (
-            <div className={'grid'}>
-                <div className={'dots'}>
-                    <canvas ref="canvas" width={width} height={height}/>
+            <div className={"grid"}>
+                <div className={"dots"}>
+                    <canvas ref="canvas" width={width} height={height} />
                 </div>
             </div>
         );
