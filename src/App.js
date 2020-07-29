@@ -1,6 +1,19 @@
 import React, { Component } from "react";
-import { makeNoise2D } from "open-simplex-noise";
+import { makeNoise2D, makeNoise3D } from "open-simplex-noise";
 import "./App.css";
+
+class point {
+    constructor(x = null, y = null) {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+const lerp = (v0, v1, t) => {
+    const lerped = (1 - t) * v0 + t * v1;
+    console.log(v0, v1, t, lerped);
+    return lerp;
+}
 
 class App extends Component {
     constructor(props) {
@@ -17,32 +30,35 @@ class App extends Component {
             strength: 40,
             strengthCur: 0,
             mouseOver: false,
-            data: [[]],
         };
 
         this.drawing = false;
         this.ctx = null;
+        this.data = [[]];
 
         this.updateWindowDimensions = this.updateWindowDimensions.bind(this);
         this.startts = this.getTS();
 
-        this.noise2D = makeNoise2D(Date.now());
+        this.noise = makeNoise3D(1);
     }
 
-    getValues(width, height) {
+    getValues(width, height, time) {
         const { pixelSize } = this.state;
-        const { noise2D } = this;
+        const { noise } = this;
 
         const rows = Math.ceil(height / pixelSize) + 1;
         const cols = Math.ceil(width / pixelSize) + 1;
 
-        const mod = 0.1;
+        const mod = pixelSize / 100;
 
         const data = new Array(cols);
         for (let x = 0; x < cols; x++) {
             data[x] = new Array(rows);
             for (let y = 0; y < rows; y++) {
-                data[x][y] = this.convertRange(noise2D(x * mod, y * mod), [-1, 1], [0, 1]);
+                //data[x][y] = this.convertRange(noise(x * mod, y * mod, time),[-1, 1], [0, 1]);
+                data[x][y] =parseFloat(noise(x * mod, y * mod, time)).toFixed(4);
+                //data[x][y] = noise(x * mod, y * mod, time);
+                //data[x][y] = Math.random();
             }
         }
 
@@ -66,9 +82,7 @@ class App extends Component {
         const realWidth = Math.min(width, innerWidth);
         const realHeight = Math.min(height, innerHeight);
 
-        const data = this.getValues(realWidth, realHeight);
-
-        this.setState({ width: realWidth, height: realHeight, data: data });
+        this.setState({ width: realWidth, height: realHeight });
         this.nextFrame();
     }
 
@@ -83,10 +97,11 @@ class App extends Component {
 
         this.drawDots();
 
-        //this.nextFrame();
+        this.nextFrame();
     }
 
     nextFrame() {
+        const { width, height } = this.state;
         this.rAF = requestAnimationFrame(() => this.updateAnimationState());
     }
 
@@ -119,36 +134,41 @@ class App extends Component {
     }
 
     drawDots() {
-        const { width, height, data, pixelSize } = this.state;
+        const { width, height, pixelSize } = this.state;
         const { ctx } = this;
         const ts = this.getTS() / 1000;
 
+        const data = this.getValues(width, height, Date.now() / 10000);
+
+        const halfPixel = pixelSize / 2;
         /*
         for (let x = 0; x < data.length; x++) {
             for (let y = 0; y < data[x].length; y++) {
-
-                const v = data[x][y];
+                const v = this.convertRange(data[x][y], [-1, 1], [0, 1]);
 
                 const r = v * 255;
                 const g = v * 255;
                 const b = v * 255;
-                const a = 0.8;
+                const a = 0.5;
 
-                const mod = pixelSize * .5;
+                const mod = 0; //pixelSize * 0.1;
+                const s = pixelSize;
+                const hs = 0; //s / 1;
 
                 ctx.beginPath();
                 ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
-                ctx.fillRect((x * pixelSize) + mod, (y * pixelSize) + mod, pixelSize - mod, pixelSize - mod );
+                ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
             }
         }
         //*/
 
+        /*
         for (let x = 0; x < data.length - 1; x++) {
             for (let y = 0; y < data[x].length - 1; y++) {
-                const v1 = Math.round(data[x][y]);
-                const v2 = Math.round(data[x + 1][y]);
-                const v3 = Math.round(data[x + 1][y + 1]);
-                const v4 = Math.round(data[x][y + 1]);
+                const v1 = Math.ceil(data[x][y]);
+                const v2 = Math.ceil(data[x + 1][y]);
+                const v3 = Math.ceil(data[x + 1][y + 1]);
+                const v4 = Math.ceil(data[x][y + 1]);
                 const vString = `${v1}${v2}${v3}${v4}`;
 
                 const line = (fx, fy, tx, ty) => {
@@ -157,40 +177,45 @@ class App extends Component {
                     ctx.moveTo(x * pixelSize + fx, y * pixelSize + fy);
                     ctx.lineTo(x * pixelSize + tx, y * pixelSize + ty);
                     ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.fillStyle = `rgba(255, 255, 255, 1)`;
+                    ctx.fillRect(x * pixelSize + fx - 2, y * pixelSize + fy - 2, 4, 4);
+                    ctx.fillRect(x * pixelSize + tx - 2, y * pixelSize + ty - 2, 4, 4);
                 };
 
                 switch (vString) {
                     case "1110":
                     case "0001":
-                        line(0, pixelSize / 2, pixelSize / 2, pixelSize);
+                        line(0, halfPixel, halfPixel, pixelSize);
                         break;
                     case "1101":
                     case "0010":
-                        line(pixelSize / 2, pixelSize, pixelSize, pixelSize / 2);
+                        line(halfPixel, pixelSize, pixelSize, halfPixel);
                         break;
                     case "1011":
                     case "0100":
-                        line(pixelSize / 2, 0, pixelSize, pixelSize / 2);
+                        line(halfPixel, 0, pixelSize, halfPixel);
                         break;
                     case "0111":
                     case "1000":
-                        line(0, pixelSize / 2, pixelSize / 2, 0);
+                        line(0, halfPixel, halfPixel, 0);
                         break;
                     case "1100":
                     case "0011":
-                        line(0, pixelSize / 2, pixelSize, pixelSize / 2);
+                        line(0, halfPixel, pixelSize, halfPixel);
                         break;
                     case "1001":
                     case "0110":
-                        line(pixelSize / 2, 0, pixelSize / 2, pixelSize);
+                        line(halfPixel, 0, halfPixel, pixelSize);
                         break;
                     case "1010":
-                        line(0, pixelSize / 2, pixelSize / 2, 0);
-                        line(pixelSize / 2, pixelSize, pixelSize, pixelSize / 2);
+                        line(0, halfPixel, halfPixel, 0);
+                        line(halfPixel, pixelSize, pixelSize, halfPixel);
                         break;
                     case "0101":
-                        line(0, pixelSize / 2, pixelSize / 2, pixelSize);
-                        line(pixelSize / 2, 0, pixelSize, pixelSize / 2);
+                        line(0, halfPixel, halfPixel, pixelSize);
+                        line(halfPixel, 0, pixelSize, halfPixel);
                         break;
                     case "1111":
                     case "0000":
@@ -199,15 +224,172 @@ class App extends Component {
                         console.log("missed", vString);
                         break;
                 }
-
-                if (y > 1) {
-                    //break;
-                }
-            }
-            if (x > 0) {
-                //break;
             }
         }
+        //*/
+
+        //*
+        for (let x = 0; x < data.length - 1; x++) {
+            for (let y = 0; y < data[x].length - 1; y++) {
+                const _v1 = data[x    ][y    ];
+                const _v2 = data[x + 1][y    ];
+                const _v3 = data[x + 1][y + 1];
+                const _v4 = data[x    ][y + 1];
+                const s = `${Math.ceil(_v1)}${Math.ceil(_v2)}${Math.ceil(_v3)}${Math.ceil(_v4)}`;
+
+                const line = (p1, p2, colour = false) => {
+                    ctx.beginPath();
+                    if (!colour) {
+                        ctx.strokeStyle = `rgba(0, 255, 0, 1)`;
+                    } else {
+                        ctx.strokeStyle = `${colour}`;
+                    }
+                    ctx.moveTo(x * pixelSize + p1.x, y * pixelSize + p1.y);
+                    ctx.lineTo(x * pixelSize + p2.x, y * pixelSize + p2.y);
+                    ctx.stroke();
+                };
+
+                const v1 = this.convertRange(data[x    ][y    ], [-1, 1], [0, 1]);
+                const v2 = this.convertRange(data[x + 1][y    ], [-1, 1], [0, 1]);
+                const v3 = this.convertRange(data[x + 1][y + 1], [-1, 1], [0, 1]);
+                const v4 = this.convertRange(data[x    ][y + 1], [-1, 1], [0, 1]);
+
+                let amt;
+                let a = new point();
+                a.x = pixelSize * ((v1 + v2)  / 2);
+                a.y = 0;
+
+                let b = new point();
+                b.x = pixelSize;
+                b.y = pixelSize * ((v2 + v3) / 2);
+
+                let c = new point();
+                c.x = pixelSize * ((v3 + v4) / 2);
+                c.y = pixelSize;
+          
+                let d = new point();
+                d.x = 0;
+                d.y = pixelSize * ((v4 + v1) / 2);
+
+
+                
+                switch (s) {
+                    case "1110":
+                    case "0001":
+                        line(c, d);
+                        break;
+                    case "1101":
+                    case "0010":
+                        line(b, c);
+                        break;
+                    case "1011":
+                    case "0100":
+                        line(a, b);
+                        break;
+                    case "0111":
+                        line(d, a);
+                        break;
+                    case "1000":
+                        line(d, a);
+                        break;
+                    case "1100":
+                    case "0011":
+                        line(d, b);
+                        break;
+                    case "1001":
+                    case "0110":
+                        line(a, c);
+                        break;
+                    case "1010":
+                        if (((v1 + v2) / 2) > 0.5) {
+                            line(a, d);
+                            line(b, c);
+                        } else {
+                            line(a, b);
+                            line(c, d);
+                        }
+                        break;
+                    case "0101":
+                        line(a, b);
+                        line(c, d);
+                        break;
+                }
+            }
+        }
+        //*/
+
+        /*
+        for (let x = 0; x < data.length - 1; x++) {
+            for (let y = 0; y < data[x].length - 1; y++) {
+                const v1 = data[x    ][y    ];
+                const v2 = data[x + 1][y    ];
+                const v3 = data[x + 1][y + 1];
+                const v4 = data[x    ][y + 1];
+
+                const line = (fx, fy, tx, ty, colour = false) => {
+                    ctx.beginPath();
+                    if (colour) {
+                        ctx.strokeStyle = colour;
+                    } else {
+                        ctx.strokeStyle = `rgba(255, 255, 255, 1)`;
+                    }
+                    ctx.moveTo((x * pixelSize) + fx, (y * pixelSize) + fy);
+                    ctx.lineTo((x * pixelSize) + tx, (y * pixelSize) + ty);
+                    ctx.stroke();
+                };
+
+                const s = `${Math.round(v1)}${Math.round(v2)}${Math.round(v3)}${Math.round(v4)}`;
+                //const s = `${Math.ceil(data[x][y])}${Math.ceil(data[x + 1][y])}${Math.ceil(data[x + 1][y + 1])}${Math.ceil(data[x][y + 1])}`;
+                const pixelMod = pixelSize;
+                switch (s) {
+                    case "1110":
+                        line(0, lerp(0, pixelSize, v1), lerp(0, pixelSize, v3), pixelSize);
+                        break;
+                    case "0001":
+                        line(0, lerp(0, pixelSize, v4), lerp(0, pixelSize, v4), pixelSize);
+                        break;
+                    case "1101":
+                        line(lerp(0, pixelSize, v4), pixelSize, pixelSize, lerp(0, pixelSize, v2));
+                        break;
+                    case "0010":
+                        line(lerp(0, pixelSize, v3), pixelSize, pixelSize, lerp(0, pixelSize, v3)); 
+                        break;
+                    case "1011":
+                        line(lerp(0, pixelSize, v1), 0, pixelSize, lerp(0, pixelSize, v3));
+                        break;
+                    case "0100":
+                        line(lerp(0, pixelSize, v2), 0, pixelSize, lerp(0, pixelSize, v2));
+                        break;
+                    case "0111":
+                        line(0, lerp(0, pixelSize, v4), lerp(0, pixelSize, v2), 0);
+                        break;
+                    case "1000":
+                        line(0, lerp(0, pixelSize, v1), lerp(0, pixelSize, v1), 0);
+                        break;
+                    case "1100":
+                        line(0, lerp(0, pixelSize, v1), pixelSize, lerp(0, pixelSize, v2));
+                        break;
+                    case "0011":
+                        line(0, lerp(0, pixelSize, v4), pixelSize, lerp(0, pixelSize, v3));
+                        break;
+                    case "1001":
+                        line(lerp(0, pixelSize, v1), 0, lerp(0, pixelSize, v4), pixelSize);
+                        break;
+                    case "0110":
+                        line(lerp(0, pixelSize, v2), 0, lerp(0, pixelSize, v3), pixelSize);
+                        break;
+                    case "1010":
+                        line(0, lerp(0, pixelSize, v1), lerp(0, pixelSize, v1), 0);
+                        line(lerp(0, pixelSize, v3), pixelSize, pixelSize, lerp(0, pixelSize, v3));
+                        break;
+                    case "0101":
+                        line(0, lerp(0, pixelSize, v4), lerp(0, pixelSize, v4), pixelSize);
+                        line(lerp(0, pixelSize, v2), 0, pixelSize, lerp(0, pixelSize, v2));
+                        break;
+                }
+            }
+        }
+        //*/
     }
 
     render() {
