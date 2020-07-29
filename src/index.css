@@ -20,3 +20,15 @@ code {
   background: rgba(255, 255, 255, .5);
   padding: 1em;
 }
+
+.ui p {
+  font-weight: bold;
+}
+
+.ui label {
+  display: block;
+}
+
+.ui div {
+  padding-bottom: 1em;
+}

@@ -31,6 +31,7 @@ class App extends Component {
             strengthCur: 0,
             mouseOver: false,
             cutoff: 128,
+            color: '#ffffff',
         };
 
         this.drawing = false;
@@ -132,33 +133,11 @@ class App extends Component {
     }
 
     drawDots() {
-        const { width, height, pixelSize, cutoff } = this.state;
+        const { width, height, pixelSize, cutoff, color } = this.state;
         const { ctx } = this;
         const ts = this.getTS() / 1000;
 
         const data = this.getValues(width, height, Date.now() / 10000);
-
-        const halfPixel = pixelSize / 2;
-        /*
-        for (let x = 0; x < data.length; x++) {
-            for (let y = 0; y < data[x].length; y++) {
-                const v = this.convertRange(data[x][y], [-1, 1], [0, 1]);
-
-                const r = v * 255;
-                const g = v * 255;
-                const b = v * 255;
-                const a = 0.5;
-
-                const mod = 0; //pixelSize * 0.1;
-                const s = pixelSize;
-                const hs = 0; //s / 1;
-
-                ctx.beginPath();
-                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
-                ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
-            }
-        }
-        //*/
 
         const c = this.convertRange(cutoff, [0, 255], [-1, 1]);
         const round = (val) => {            
@@ -173,13 +152,9 @@ class App extends Component {
                 const _v4 = data[x    ][y + 1];
                 const s = `${round(_v1)}${round(_v2)}${round(_v3)}${round(_v4)}`;
 
-                const line = (p1, p2, colour = false) => {
+                const line = (p1, p2) => {
                     ctx.beginPath();
-                    if (!colour) {
-                        ctx.strokeStyle = `rgba(0, 255, 0, 1)`;
-                    } else {
-                        ctx.strokeStyle = `${colour}`;
-                    }
+                    ctx.strokeStyle = `${color}`;
                     ctx.moveTo(x * pixelSize + p1.x, y * pixelSize + p1.y);
                     ctx.lineTo(x * pixelSize + p2.x, y * pixelSize + p2.y);
                     ctx.stroke();
@@ -255,17 +230,23 @@ class App extends Component {
     }
 
     render() {
-        const { width, height, cutoff } = this.state;
+        const { width, height, cutoff, color } = this.state;
 
         return (
             <div className={"grid"}>
                 <div class="ui">
-                    <p>Controles</p>
-                    <label htmlFor="height" >Height</label>
-                    <input type="range" min="0" max="255" value={cutoff} onChange={(e) => this.setState({cutoff: e.target.value})} className="slider" id="height" name="height" />
+                    <p>Controls</p>
+                    <div>
+                        <label htmlFor="height" >Height</label>
+                        <input type="range" min="0" max="255" value={cutoff} onChange={(e) => this.setState({cutoff: e.target.value})} className="slider" id="height" name="height" />
+                    </div>
+                    <div>
+                        <label htmlFor="height" >Color</label>
+                        <input type="color" value={ color } onChange={(e) => this.setState({color: e.target.value})} id="color" name="color" />
+                    </div>
                 </div>
                 <div className={"dots"}>
-                    <canvas ref="canvas" width={width} height={height} />
+                    <canvas ref="canvas"  width={width} height={height} />
                 </div>
             </div>
         );
