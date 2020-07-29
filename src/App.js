@@ -2,12 +2,25 @@ import React, { Component } from "react";
 import { makeNoise2D, makeNoise3D } from "open-simplex-noise";
 import "./App.css";
 
+class point {
+    constructor(x = null, y = null) {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+const lerp = (v0, v1, t) => {
+    const lerped = (1 - t) * v0 + t * v1;
+    console.log(v0, v1, t, lerped);
+    return lerp;
+}
+
 class App extends Component {
     constructor(props) {
         super(props);
 
         this.state = {
-            pixelSize: 60,
+            pixelSize: 10,
             height: 500,
             width: 150,
             mouseX: -9999,
@@ -42,7 +55,9 @@ class App extends Component {
         for (let x = 0; x < cols; x++) {
             data[x] = new Array(rows);
             for (let y = 0; y < rows; y++) {
-                data[x][y] = noise(x * mod, y * mod, time);
+                //data[x][y] = this.convertRange(noise(x * mod, y * mod, time),[-1, 1], [0, 1]);
+                data[x][y] =parseFloat(noise(x * mod, y * mod, time)).toFixed(4);
+                //data[x][y] = noise(x * mod, y * mod, time);
                 //data[x][y] = Math.random();
             }
         }
@@ -123,9 +138,10 @@ class App extends Component {
         const { ctx } = this;
         const ts = this.getTS() / 1000;
 
-        const data = this.getValues(width, height,  Date.now() / 5000);
+        const data = this.getValues(width, height, Date.now() / 10000);
 
-        //*
+        const halfPixel = pixelSize / 2;
+        /*
         for (let x = 0; x < data.length; x++) {
             for (let y = 0; y < data[x].length; y++) {
                 const v = this.convertRange(data[x][y], [-1, 1], [0, 1]);
@@ -141,12 +157,11 @@ class App extends Component {
 
                 ctx.beginPath();
                 ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a})`;
-                ctx.fillRect(x * pixelSize + mod - hs, y * pixelSize + mod - hs, s, s);
+                ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
             }
         }
         //*/
 
-        const halfPixel = pixelSize / 2;
         /*
         for (let x = 0; x < data.length - 1; x++) {
             for (let y = 0; y < data[x].length - 1; y++) {
@@ -216,6 +231,96 @@ class App extends Component {
         //*
         for (let x = 0; x < data.length - 1; x++) {
             for (let y = 0; y < data[x].length - 1; y++) {
+                const _v1 = data[x    ][y    ];
+                const _v2 = data[x + 1][y    ];
+                const _v3 = data[x + 1][y + 1];
+                const _v4 = data[x    ][y + 1];
+                const s = `${Math.ceil(_v1)}${Math.ceil(_v2)}${Math.ceil(_v3)}${Math.ceil(_v4)}`;
+
+                const line = (p1, p2, colour = false) => {
+                    ctx.beginPath();
+                    if (!colour) {
+                        ctx.strokeStyle = `rgba(0, 255, 0, 1)`;
+                    } else {
+                        ctx.strokeStyle = `${colour}`;
+                    }
+                    ctx.moveTo(x * pixelSize + p1.x, y * pixelSize + p1.y);
+                    ctx.lineTo(x * pixelSize + p2.x, y * pixelSize + p2.y);
+                    ctx.stroke();
+                };
+
+                const v1 = this.convertRange(data[x    ][y    ], [-1, 1], [0, 1]);
+                const v2 = this.convertRange(data[x + 1][y    ], [-1, 1], [0, 1]);
+                const v3 = this.convertRange(data[x + 1][y + 1], [-1, 1], [0, 1]);
+                const v4 = this.convertRange(data[x    ][y + 1], [-1, 1], [0, 1]);
+
+                let amt;
+                let a = new point();
+                a.x = pixelSize * ((v1 + v2)  / 2);
+                a.y = 0;
+
+                let b = new point();
+                b.x = pixelSize;
+                b.y = pixelSize * ((v2 + v3) / 2);
+
+                let c = new point();
+                c.x = pixelSize * ((v3 + v4) / 2);
+                c.y = pixelSize;
+          
+                let d = new point();
+                d.x = 0;
+                d.y = pixelSize * ((v4 + v1) / 2);
+
+
+                
+                switch (s) {
+                    case "1110":
+                    case "0001":
+                        line(c, d);
+                        break;
+                    case "1101":
+                    case "0010":
+                        line(b, c);
+                        break;
+                    case "1011":
+                    case "0100":
+                        line(a, b);
+                        break;
+                    case "0111":
+                        line(d, a);
+                        break;
+                    case "1000":
+                        line(d, a);
+                        break;
+                    case "1100":
+                    case "0011":
+                        line(d, b);
+                        break;
+                    case "1001":
+                    case "0110":
+                        line(a, c);
+                        break;
+                    case "1010":
+                        if (((v1 + v2) / 2) > 0.5) {
+                            line(a, d);
+                            line(b, c);
+                        } else {
+                            line(a, b);
+                            line(c, d);
+                        }
+                        break;
+                    case "0101":
+                        line(a, b);
+                        line(c, d);
+                        break;
+                }
+            }
+        }
+        //*/
+
+        /*
+        for (let x = 0; x < data.length - 1; x++) {
+            for (let y = 0; y < data[x].length - 1; y++) {
                 const v1 = data[x    ][y    ];
                 const v2 = data[x + 1][y    ];
                 const v3 = data[x + 1][y + 1];
@@ -228,59 +333,58 @@ class App extends Component {
                     } else {
                         ctx.strokeStyle = `rgba(255, 255, 255, 1)`;
                     }
-                    ctx.moveTo(x * pixelSize + fx, y * pixelSize + fy);
-                    ctx.lineTo(x * pixelSize + tx, y * pixelSize + ty);
+                    ctx.moveTo((x * pixelSize) + fx, (y * pixelSize) + fy);
+                    ctx.lineTo((x * pixelSize) + tx, (y * pixelSize) + ty);
                     ctx.stroke();
                 };
 
-                //const s = `${Math.round(v1)}${Math.round(v2)}${Math.round(v3)}${Math.round(v4)}`;
-                const s = `${Math.ceil(data[x][y])}${Math.ceil(data[x + 1][y])}${Math.ceil(data[x + 1][y + 1])}${Math.ceil(data[x][y + 1])}`;
+                const s = `${Math.round(v1)}${Math.round(v2)}${Math.round(v3)}${Math.round(v4)}`;
+                //const s = `${Math.ceil(data[x][y])}${Math.ceil(data[x + 1][y])}${Math.ceil(data[x + 1][y + 1])}${Math.ceil(data[x][y + 1])}`;
                 const pixelMod = pixelSize;
-
                 switch (s) {
                     case "1110":
-                        line(0, halfPixel + pixelMod * v1, halfPixel - pixelMod * v3, pixelSize);
+                        line(0, lerp(0, pixelSize, v1), lerp(0, pixelSize, v3), pixelSize);
                         break;
                     case "0001":
-                        line(0, halfPixel - pixelMod * v4, halfPixel + pixelMod * v4, pixelSize);
+                        line(0, lerp(0, pixelSize, v4), lerp(0, pixelSize, v4), pixelSize);
                         break;
                     case "1101":
-                        line(halfPixel + pixelMod * v4, pixelSize, pixelSize, halfPixel + pixelMod * v2);
+                        line(lerp(0, pixelSize, v4), pixelSize, pixelSize, lerp(0, pixelSize, v2));
                         break;
                     case "0010":
-                        line(halfPixel - pixelMod * v3, pixelSize, pixelSize, halfPixel - pixelMod * v3); 
+                        line(lerp(0, pixelSize, v3), pixelSize, pixelSize, lerp(0, pixelSize, v3)); 
                         break;
                     case "1011":
-                        line(halfPixel + pixelMod * v1, 0, pixelSize, halfPixel - pixelMod * v3);
+                        line(lerp(0, pixelSize, v1), 0, pixelSize, lerp(0, pixelSize, v3));
                         break;
                     case "0100":
-                        line(halfPixel - pixelMod * v2, 0, pixelSize, halfPixel + pixelMod * v2);
+                        line(lerp(0, pixelSize, v2), 0, pixelSize, lerp(0, pixelSize, v2));
                         break;
                     case "0111":
-                        line(0, halfPixel - pixelMod * v4, halfPixel - pixelMod * v2, 0);
+                        line(0, lerp(0, pixelSize, v4), lerp(0, pixelSize, v2), 0);
                         break;
                     case "1000":
-                        line(0, halfPixel + pixelMod * v1, halfPixel + pixelMod * v1, 0);
+                        line(0, lerp(0, pixelSize, v1), lerp(0, pixelSize, v1), 0);
                         break;
                     case "1100":
-                        line(0, halfPixel + pixelMod * v1, pixelSize, halfPixel + pixelMod * v2);
+                        line(0, lerp(0, pixelSize, v1), pixelSize, lerp(0, pixelSize, v2));
                         break;
                     case "0011":
-                        line(0, halfPixel - pixelMod * v4, pixelSize, halfPixel - pixelMod * v3);
+                        line(0, lerp(0, pixelSize, v4), pixelSize, lerp(0, pixelSize, v3));
                         break;
                     case "1001":
-                        line(halfPixel + pixelMod * v1, 0, halfPixel + pixelMod * v4, pixelSize);
+                        line(lerp(0, pixelSize, v1), 0, lerp(0, pixelSize, v4), pixelSize);
                         break;
                     case "0110":
-                        line(halfPixel - pixelMod * v2, 0, halfPixel - pixelMod * v3, pixelSize);
+                        line(lerp(0, pixelSize, v2), 0, lerp(0, pixelSize, v3), pixelSize);
                         break;
                     case "1010":
-                        line(0, halfPixel + pixelMod * v1, halfPixel + pixelMod * v1, 0);
-                        line(halfPixel - pixelMod * v3, pixelSize, pixelSize, halfPixel - pixelMod * v3);
+                        line(0, lerp(0, pixelSize, v1), lerp(0, pixelSize, v1), 0);
+                        line(lerp(0, pixelSize, v3), pixelSize, pixelSize, lerp(0, pixelSize, v3));
                         break;
                     case "0101":
-                        line(0, halfPixel - pixelMod * v4, halfPixel + pixelMod * v4, pixelSize);
-                        line(halfPixel - pixelMod * v2, 0, pixelSize, halfPixel + pixelMod * v2);
+                        line(0, lerp(0, pixelSize, v4), lerp(0, pixelSize, v4), pixelSize);
+                        line(lerp(0, pixelSize, v2), 0, pixelSize, lerp(0, pixelSize, v2));
                         break;
                 }
             }
