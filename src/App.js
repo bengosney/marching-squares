@@ -19,6 +19,7 @@ class App extends Component {
             width: 150,
             cutoff: 128,
             color: '#ffffff',
+            speed: 10000,
         };
 
         this.drawing = false;
@@ -76,7 +77,7 @@ class App extends Component {
         this.ts = this.getTS();
         this.clearFrame();
 
-        this.drawDots();
+        this.drawSceen();
 
         this.nextFrame();
     }
@@ -113,10 +114,10 @@ class App extends Component {
         return ((value - r1[0]) * (r2[1] - r2[0])) / (r1[1] - r1[0]) + r2[0];
     }
 
-    drawDots() {
-        const { width, height, pixelSize, cutoff, color } = this.state;
+    drawSceen() {
+        const { width, height, pixelSize, cutoff, color, speed } = this.state;
         const { ctx } = this;
-        const ts = this.getTS() / 10000;
+        const ts = this.getTS() / speed;
 
         const data = this.getValues(width, height, ts);
 
@@ -212,7 +213,7 @@ class App extends Component {
     }
 
     render() {
-        const { width, height, cutoff, color } = this.state;
+        const { width, height, cutoff, color, speed } = this.state;
 
         return (
             <div className={"grid"}>
@@ -221,6 +222,12 @@ class App extends Component {
                     <div>
                         <label htmlFor="height" >Height</label>
                         <input type="range" min="0" max="255" value={cutoff} onChange={(e) => this.setState({cutoff: e.target.value})} className="slider" id="height" name="height" />
+                    </div>
+                    <div>
+                        <label htmlFor="speed" >Speed</label>
+                        <button type="button" onClick={(e) => this.setState({speed: 1000})}>Fast</button>
+                        <button type="button" onClick={(e) => this.setState({speed: 10000})}>Normal</button>
+                        <button type="button" onClick={(e) => this.setState({speed: 50000})}>Slow</button>
                     </div>
                     <div>
                         <label htmlFor="height" >Color</label>
