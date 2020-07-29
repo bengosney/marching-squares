@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { makeNoise2D, makeNoise3D } from "open-simplex-noise";
+import { makeNoise3D } from "open-simplex-noise";
 import "./App.css";
 
 class point {
@@ -7,12 +7,6 @@ class point {
         this.x = x;
         this.y = y;
     }
-}
-
-const lerp = (v0, v1, t) => {
-    const lerped = (1 - t) * v0 + t * v1;
-    console.log(v0, v1, t, lerped);
-    return lerp;
 }
 
 class App extends Component {
@@ -23,13 +17,6 @@ class App extends Component {
             pixelSize: 10,
             height: 500,
             width: 150,
-            mouseX: -9999,
-            mouseY: -9999,
-            mouseEvent: 0,
-            effectMod: 2,
-            strength: 40,
-            strengthCur: 0,
-            mouseOver: false,
             cutoff: 128,
             color: '#ffffff',
         };
@@ -75,14 +62,9 @@ class App extends Component {
     }
 
     updateWindowDimensions() {
-        const rect = this.canvas.getBoundingClientRect();
         const { innerWidth, innerHeight } = window;
-        const { width, height } = rect;
-        const realWidth = Math.min(width, innerWidth);
-        const realHeight = Math.min(height, innerHeight);
 
-        this.setState({ width: realWidth, height: realHeight });
-        this.nextFrame();
+        this.setState({ width: innerWidth, height: innerHeight });
     }
 
     componentWillUnmount() {
@@ -100,7 +82,6 @@ class App extends Component {
     }
 
     nextFrame() {
-        const { width, height } = this.state;
         this.rAF = requestAnimationFrame(() => this.updateAnimationState());
     }
 
@@ -135,9 +116,9 @@ class App extends Component {
     drawDots() {
         const { width, height, pixelSize, cutoff, color } = this.state;
         const { ctx } = this;
-        const ts = this.getTS() / 1000;
+        const ts = this.getTS() / 10000;
 
-        const data = this.getValues(width, height, Date.now() / 10000);
+        const data = this.getValues(width, height, ts);
 
         const c = this.convertRange(cutoff, [0, 255], [-1, 1]);
         const round = (val) => {            
@@ -165,7 +146,6 @@ class App extends Component {
                 const v3 = this.convertRange(data[x + 1][y + 1], [-1, 1], [0, 1]);
                 const v4 = this.convertRange(data[x    ][y + 1], [-1, 1], [0, 1]);
 
-                let amt;
                 let a = new point();
                 a.x = pixelSize * ((v1 + v2)  / 2);
                 a.y = 0;
@@ -224,6 +204,8 @@ class App extends Component {
                         line(a, b);
                         line(c, d);
                         break;
+                    default:
+                        // do nothing
                 }
             }
         }
